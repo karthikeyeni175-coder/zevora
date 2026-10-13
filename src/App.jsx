@@ -20,7 +20,6 @@ import ScrollStory from "./components/ScrollStory.jsx";
 import Shop from "./components/Shop.jsx";
 import BeautyRoutine from "./components/BeautyRoutine.jsx";
 import PremiumBrands from "./components/PremiumBrands.jsx";
-import SeasonalCollection from "./components/SeasonalCollection.jsx";
 import CountdownBar from "./components/CountdownBar.jsx";
 import Contact from "./components/Contact.jsx";
 import Booking from "./components/Booking.jsx";
@@ -54,7 +53,6 @@ export default function App() {
       <Shop />
       <BeautyRoutine />
       <PremiumBrands />
-      <SeasonalCollection />
       <CountdownBar />
       <Contact />
       <Booking />

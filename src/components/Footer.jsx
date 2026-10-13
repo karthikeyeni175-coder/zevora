@@ -39,11 +39,10 @@ export default function Footer() {
               </div>
               <div className="footer-col">
                   <h4>Newsletter</h4>
-                  <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: "300", marginBottom: "1rem" }}>Get exclusive
-                      offers, beauty tips, and new service updates delivered to your inbox.</p>
+                  <p className="newsletter-desc">Get exclusive offers, beauty tips, and updates delivered to your inbox.</p>
                   <div className="newsletter-form">
                       <input type="email" placeholder="Your email" aria-label="Newsletter email" />
-                      <button type="button">✦</button>
+                      <button type="button">Join ✦</button>
                   </div>
               </div>
           </div>

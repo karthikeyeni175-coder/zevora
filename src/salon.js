@@ -19,25 +19,55 @@ export default function initSalon() {
               if (ls) ls.classList.add('hidden');
           }, 2200);
 
-          /* ── CUSTOM CURSOR ── */
+          /* ── CUSTOM CURSOR (Desktop only, completely hidden on mobile/touch) ── */
           const cursorDot = document.getElementById('cursor-dot');
           const cursorRing = document.getElementById('cursor-ring');
-          let mouseX = 0, mouseY = 0;
-          let ringX = 0, ringY = 0;
+          const isMobileOrTouch = () => window.matchMedia('(pointer: coarse), (hover: none)').matches || window.innerWidth <= 1024;
 
-          document.addEventListener('mousemove', e => {
-              mouseX = e.clientX; mouseY = e.clientY;
-              cursorDot.style.left = mouseX + 'px';
-              cursorDot.style.top = mouseY + 'px';
-          });
-          function animateRing() {
-              ringX += (mouseX - ringX) * 0.12;
-              ringY += (mouseY - ringY) * 0.12;
-              cursorRing.style.left = ringX + 'px';
-              cursorRing.style.top = ringY + 'px';
-              requestAnimationFrame(animateRing);
+          if (cursorDot && cursorRing) {
+              if (isMobileOrTouch()) {
+                  cursorDot.style.display = 'none';
+                  cursorRing.style.display = 'none';
+              } else {
+                  let mouseX = -100, mouseY = -100;
+                  let ringX = -100, ringY = -100;
+                  let isCursorActive = false;
+
+                  document.addEventListener('mousemove', e => {
+                      if (isMobileOrTouch()) {
+                          cursorDot.style.display = 'none';
+                          cursorRing.style.display = 'none';
+                          return;
+                      }
+                      if (!isCursorActive) {
+                          isCursorActive = true;
+                          cursorDot.style.display = 'block';
+                          cursorRing.style.display = 'block';
+                      }
+                      mouseX = e.clientX; mouseY = e.clientY;
+                      cursorDot.style.left = mouseX + 'px';
+                      cursorDot.style.top = mouseY + 'px';
+                  });
+
+                  function animateRing() {
+                      if (!isMobileOrTouch()) {
+                          ringX += (mouseX - ringX) * 0.12;
+                          ringY += (mouseY - ringY) * 0.12;
+                          cursorRing.style.left = ringX + 'px';
+                          cursorRing.style.top = ringY + 'px';
+                      }
+                      requestAnimationFrame(animateRing);
+                  }
+                  animateRing();
+              }
+
+              window.addEventListener('resize', () => {
+                  if (isMobileOrTouch()) {
+                      cursorDot.style.display = 'none';
+                      cursorRing.style.display = 'none';
+                  }
+              });
           }
-          animateRing();
 
           /* ── SCROLL PROGRESS ── */
           const progressBar = document.getElementById('scroll-progress');
@@ -208,33 +238,120 @@ export default function initSalon() {
           (function () {
               const track = document.getElementById('testimonialTrack');
               const controls = document.getElementById('tControls');
-              if (!track) return;
+              if (!track || !controls) return;
 
               const cards = track.querySelectorAll('.testimonial-card');
               const total = cards.length;
-              let current = 0;
-              const perView = window.innerWidth > 900 ? 3 : window.innerWidth > 600 ? 2 : 1;
-              const slides = total - perView + 1;
+              if (total === 0) return;
 
-              // Build dots
-              for (let i = 0; i < slides; i++) {
-                  const dot = document.createElement('div');
-                  dot.className = 't-dot' + (i === 0 ? ' active' : '');
-                  dot.addEventListener('click', () => goTo(i));
-                  controls.appendChild(dot);
+              let current = 0;
+              let perView = 1;
+              let slides = total;
+              let auto = null;
+
+              function getCardStep() {
+                  if (!cards[0]) return 0;
+                  const computedGap = parseFloat(window.getComputedStyle(track).gap) || 0;
+                  return cards[0].offsetWidth + computedGap;
               }
 
               function goTo(idx) {
                   current = Math.max(0, Math.min(idx, slides - 1));
-                  const cardWidth = cards[0].offsetWidth + 24; // gap
-                  track.style.transform = `translateX(-${current * cardWidth}px)`;
-                  document.querySelectorAll('.t-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+                  const step = getCardStep();
+                  track.style.transform = `translateX(-${current * step}px)`;
+                  const dots = controls.querySelectorAll('.t-dot');
+                  dots.forEach((d, i) => d.classList.toggle('active', i === current));
               }
 
-              // Autoplay
-              let auto = setInterval(() => goTo((current + 1) % slides), 4000);
-              track.addEventListener('mouseenter', () => clearInterval(auto));
-              track.addEventListener('mouseleave', () => { auto = setInterval(() => goTo((current + 1) % slides), 4000); });
+              function startAuto() {
+                  stopAuto();
+                  if (slides > 1) {
+                      auto = setInterval(() => {
+                          goTo((current + 1) % slides);
+                      }, 4500);
+                  }
+              }
+
+              function stopAuto() {
+                  if (auto) {
+                      clearInterval(auto);
+                      auto = null;
+                  }
+              }
+
+              function updateSlider() {
+                  const width = window.innerWidth;
+                  perView = width > 900 ? 3 : (width > 600 ? 2 : 1);
+                  slides = Math.max(1, total - perView + 1);
+                  current = Math.min(current, slides - 1);
+
+                  // Rebuild dots
+                  controls.innerHTML = '';
+                  for (let i = 0; i < slides; i++) {
+                      const dot = document.createElement('div');
+                      dot.className = 't-dot' + (i === current ? ' active' : '');
+                      dot.setAttribute('aria-label', `Testimonial slide ${i + 1}`);
+                      dot.addEventListener('click', () => {
+                          goTo(i);
+                          startAuto();
+                      });
+                      controls.appendChild(dot);
+                  }
+                  goTo(current);
+              }
+
+              updateSlider();
+              startAuto();
+
+              // Hover pause
+              track.addEventListener('mouseenter', stopAuto);
+              track.addEventListener('mouseleave', startAuto);
+
+              // Mobile Touch Swipe with 1:1 Tracking
+              let startX = 0;
+              let currentX = 0;
+              let isTouching = false;
+              let diffX = 0;
+
+              track.addEventListener('touchstart', (e) => {
+                  stopAuto();
+                  startX = e.touches[0].clientX;
+                  currentX = startX;
+                  diffX = 0;
+                  isTouching = true;
+                  track.style.transition = 'none';
+              }, { passive: true });
+
+              track.addEventListener('touchmove', (e) => {
+                  if (!isTouching) return;
+                  currentX = e.touches[0].clientX;
+                  diffX = currentX - startX;
+                  const step = getCardStep();
+                  const baseOffset = -current * step;
+                  track.style.transform = `translateX(${baseOffset + diffX}px)`;
+              }, { passive: true });
+
+              track.addEventListener('touchend', () => {
+                  if (!isTouching) return;
+                  isTouching = false;
+                  track.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                  if (diffX < -40 && current < slides - 1) {
+                      goTo(current + 1);
+                  } else if (diffX > 40 && current > 0) {
+                      goTo(current - 1);
+                  } else {
+                      goTo(current);
+                  }
+                  diffX = 0;
+                  startAuto();
+              });
+
+              // Resize handler to maintain exact alignment
+              let resizeTimer;
+              window.addEventListener('resize', () => {
+                  clearTimeout(resizeTimer);
+                  resizeTimer = setTimeout(updateSlider, 120);
+              });
           })();
 
           /* ── GALLERY LIGHTBOX ── */
@@ -330,31 +447,6 @@ export default function initSalon() {
           }
           window.openServiceModal = openServiceModal;
           window.closeServiceModal = closeServiceModal;
-
-          /* ═══════════════════════════════════════
-             FESTIVAL THEME AUTO CHANGE
-          ═══════════════════════════════════════ */
-          (function () {
-              const m = new Date().getMonth() + 1;
-              const d = new Date().getDate();
-              const banner = document.getElementById('festival-banner');
-              if ((m === 10 || m === 11) && d >= 1) {
-                  document.body.classList.add('theme-diwali');
-                  banner.textContent = '🪔 Happy Diwali! Use code DIWALI20 for 20% OFF all services this festive season!';
-                  banner.classList.add('show');
-              } else if (m === 12) {
-                  document.body.classList.add('theme-christmas');
-                  banner.textContent = '🎄 Merry Christmas! Enjoy 15% OFF on all spa & facial packages this December!';
-                  banner.classList.add('show');
-              } else if (m === 2 && d <= 14) {
-                  document.body.classList.add('theme-valentine');
-                  banner.textContent = '💕 Valentine\'s Special! Book a couple package and get 25% OFF. Offer ends Feb 14!';
-                  banner.classList.add('show');
-              }
-              if (banner.classList.contains('show')) {
-                  document.getElementById('navbar').style.top = '2.5rem';
-              }
-          })();
 
           /* ═══════════════════════════════════════
              SALON AVAILABILITY
@@ -599,32 +691,6 @@ export default function initSalon() {
           }
 
           /* ═══════════════════════════════════════
-             SEASONAL CARDS AUTO CHANGE
-          ═══════════════════════════════════════ */
-          (function () {
-              const cards = document.querySelectorAll('.season-item');
-              if (!cards.length) return;
-              let currentSeason = 0;
-
-              function showSeason() {
-                  cards.forEach((c, idx) => {
-                      if (idx === currentSeason) {
-                          c.classList.add('active-season');
-                      } else {
-                          c.classList.remove('active-season');
-                          // Remove ::before animation by temporarily resetting transition
-                          c.style.transition = 'none';
-                          setTimeout(() => c.style.transition = '', 50);
-                      }
-                  });
-                  currentSeason = (currentSeason + 1) % cards.length;
-              }
-
-              showSeason();
-              setInterval(showSeason, 3000);
-          })();
-
-          /* ═══════════════════════════════════════
              APPOINTMENT COUNTDOWN
           ═══════════════════════════════════════ */
           (function () {
@@ -705,25 +771,31 @@ export default function initSalon() {
                   } else if (index > currentGalleryIndex) {
                       // Left Stack (Upcoming bundle)
                       const offset = index - currentGalleryIndex;
+                      const isSmall = window.innerWidth < 480;
                       const isMobile = window.innerWidth < 768;
-                      const spreadX = isMobile ? 8 : 15;
-                      const spreadY = isMobile ? 3 : 8;
+                      const spreadX = isSmall ? 0 : (isMobile ? 6 : 15);
+                      const spreadY = isSmall ? 4 : (isMobile ? 3 : 8);
 
-                      card.style.left = isMobile ? '20%' : '15%';
+                      card.style.left = isSmall ? '50%' : (isMobile ? '22%' : '15%');
                       card.style.zIndex = 50 - offset;
-                      card.style.transform = `translate(calc(-50% - ${offset * spreadX}px), ${offset * spreadY}px) rotateY(0deg) scale(${1 - offset * 0.05}) rotate(-${offset * 2}deg)`;
-                      card.style.opacity = offset > 4 ? 0 : (1 - offset * 0.1);
+                      card.style.transform = isSmall
+                          ? `translate(-50%, ${offset * spreadY}px) scale(${Math.max(0.7, 1 - offset * 0.06)})`
+                          : `translate(calc(-50% - ${offset * spreadX}px), ${offset * spreadY}px) rotateY(0deg) scale(${1 - offset * 0.05}) rotate(-${offset * 2}deg)`;
+                      card.style.opacity = offset > 3 ? 0 : (1 - offset * 0.15);
                   } else {
                       // Right Stack (Passed bundle)
                       const offset = currentGalleryIndex - index;
+                      const isSmall = window.innerWidth < 480;
                       const isMobile = window.innerWidth < 768;
-                      const spreadX = isMobile ? 8 : 15;
-                      const spreadY = isMobile ? 3 : 8;
+                      const spreadX = isSmall ? 0 : (isMobile ? 6 : 15);
+                      const spreadY = isSmall ? 4 : (isMobile ? 3 : 8);
 
-                      card.style.left = isMobile ? '80%' : '85%';
+                      card.style.left = isSmall ? '50%' : (isMobile ? '78%' : '85%');
                       card.style.zIndex = 50 - offset;
-                      card.style.transform = `translate(calc(-50% + ${offset * spreadX}px), ${offset * spreadY}px) rotateY(720deg) scale(${1 - offset * 0.05}) rotate(${offset * 2}deg)`;
-                      card.style.opacity = offset > 4 ? 0 : (1 - offset * 0.1);
+                      card.style.transform = isSmall
+                          ? `translate(-50%, ${offset * spreadY}px) scale(${Math.max(0.7, 1 - offset * 0.06)})`
+                          : `translate(calc(-50% + ${offset * spreadX}px), ${offset * spreadY}px) rotateY(720deg) scale(${1 - offset * 0.05}) rotate(${offset * 2}deg)`;
+                      card.style.opacity = offset > 3 ? 0 : (1 - offset * 0.15);
                   }
               });
           }

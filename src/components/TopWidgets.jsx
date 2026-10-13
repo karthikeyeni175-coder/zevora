@@ -10,10 +10,6 @@ export default function TopWidgets() {
     
       <canvas id="particles-canvas"></canvas>
 
-    
-      <div id="festival-banner"></div>
-
-    
       <div id="salon-availability">
           <span id="salon-dot"></span>
           <span id="salon-status-text">Checking...</span>
