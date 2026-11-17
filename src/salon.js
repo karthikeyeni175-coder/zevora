@@ -19,14 +19,14 @@ export default function initSalon() {
               if (ls) ls.classList.add('hidden');
           }, 2200);
 
-          /* ── CUSTOM CURSOR (Desktop only, completely hidden on mobile/touch) ── */
+          /* ── LUXURY CURSOR FOLLOWER ── */
           const cursorDot = document.getElementById('cursor-dot');
           const cursorRing = document.getElementById('cursor-ring');
-          const isMobileOrTouch = () => window.matchMedia('(pointer: coarse), (hover: none)').matches || window.innerWidth <= 1024;
+          if (cursorDot) cursorDot.style.display = 'none';
 
-          if (cursorDot && cursorRing) {
-              if (isMobileOrTouch()) {
-                  cursorDot.style.display = 'none';
+          if (cursorRing) {
+              const isTouchOnly = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+              if (isTouchOnly()) {
                   cursorRing.style.display = 'none';
               } else {
                   let mouseX = -100, mouseY = -100;
@@ -34,25 +34,31 @@ export default function initSalon() {
                   let isCursorActive = false;
 
                   document.addEventListener('mousemove', e => {
-                      if (isMobileOrTouch()) {
-                          cursorDot.style.display = 'none';
+                      if (isTouchOnly()) {
                           cursorRing.style.display = 'none';
                           return;
                       }
                       if (!isCursorActive) {
                           isCursorActive = true;
-                          cursorDot.style.display = 'block';
                           cursorRing.style.display = 'block';
+                          cursorRing.style.opacity = '1';
                       }
-                      mouseX = e.clientX; mouseY = e.clientY;
-                      cursorDot.style.left = mouseX + 'px';
-                      cursorDot.style.top = mouseY + 'px';
+                      mouseX = e.clientX;
+                      mouseY = e.clientY;
+                  }, { passive: true });
+
+                  document.addEventListener('mouseleave', () => {
+                      cursorRing.style.opacity = '0';
+                  });
+
+                  document.addEventListener('mouseenter', () => {
+                      if (isCursorActive) cursorRing.style.opacity = '1';
                   });
 
                   function animateRing() {
-                      if (!isMobileOrTouch()) {
-                          ringX += (mouseX - ringX) * 0.12;
-                          ringY += (mouseY - ringY) * 0.12;
+                      if (!isTouchOnly() && isCursorActive) {
+                          ringX += (mouseX - ringX) * 0.15;
+                          ringY += (mouseY - ringY) * 0.15;
                           cursorRing.style.left = ringX + 'px';
                           cursorRing.style.top = ringY + 'px';
                       }
@@ -62,8 +68,7 @@ export default function initSalon() {
               }
 
               window.addEventListener('resize', () => {
-                  if (isMobileOrTouch()) {
-                      cursorDot.style.display = 'none';
+                  if (isTouchOnly()) {
                       cursorRing.style.display = 'none';
                   }
               });
@@ -417,36 +422,82 @@ export default function initSalon() {
           });
 
           /* ── SERVICE MODAL ── */
-          function openServiceModal(el) {
-              const img = el.dataset.img;
-              const title = el.dataset.title;
-              const desc = el.dataset.desc;
+          function openServiceModal(service) {
+              const modal = document.getElementById('service-modal');
+              if (!modal) return;
 
-              document.getElementById('modal-img').src = img;
-              document.getElementById('modal-title').textContent = title;
-              document.getElementById('modal-desc').textContent = desc;
-              document.getElementById('service-modal').classList.add('active');
+              let img = 'hair_styling.png', title = 'Hair Styling', desc = '', serviceKey = 'hair';
+
+              if (typeof service === 'string') {
+                  title = service;
+                  desc = 'Luxury salon session customized to your beauty goals.';
+              } else if (service && service.dataset) {
+                  img = service.dataset.img || service.querySelector('img')?.getAttribute('src') || img;
+                  title = service.dataset.title || service.querySelector('h3')?.textContent || title;
+                  desc = service.dataset.desc || service.querySelector('p')?.textContent || desc;
+                  serviceKey = service.dataset.key || 'hair';
+              } else if (service && typeof service === 'object') {
+                  img = service.img || img;
+                  title = service.title || title;
+                  desc = service.desc || desc;
+                  serviceKey = service.id || 'hair';
+              }
+
+              const modalImg = document.getElementById('modal-img');
+              const modalTitle = document.getElementById('modal-title');
+              const modalDesc = document.getElementById('modal-desc');
+              const formCont = document.getElementById('modal-book-form-container');
+              const succMsg = document.getElementById('modal-success-msg');
+              const dateInput = document.getElementById('modal-book-date');
+
+              if (modalImg) modalImg.src = img;
+              if (modalTitle) modalTitle.textContent = title;
+              if (modalDesc) modalDesc.textContent = desc;
+              if (formCont) formCont.style.display = 'block';
+              if (succMsg) succMsg.style.display = 'none';
+
+              // Set min date to today
+              if (dateInput) {
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  dateInput.min = todayStr;
+                  if (!dateInput.value) dateInput.value = todayStr;
+              }
+
+              // Also pre-select service in main booking dropdown just in case
+              const mainServiceSel = document.getElementById('book-service');
+              if (mainServiceSel && serviceKey) {
+                  mainServiceSel.value = serviceKey;
+              }
+
+              modal.style.display = 'flex';
+              modal.classList.add('active');
               document.body.style.overflow = 'hidden';
           }
+
           function closeServiceModal() {
-              document.getElementById('service-modal').classList.remove('active');
+              const modal = document.getElementById('service-modal');
+              if (modal) {
+                  modal.classList.remove('active');
+                  modal.style.display = 'none';
+              }
               document.body.style.overflow = '';
               const formCont = document.getElementById('modal-book-form-container');
               const succMsg = document.getElementById('modal-success-msg');
               if (formCont) formCont.style.display = 'block';
               if (succMsg) succMsg.style.display = 'none';
-              
-              const nameInput = document.getElementById('modal-book-name');
-              const phoneInput = document.getElementById('modal-book-phone');
-              const dateInput = document.getElementById('modal-book-date');
-              const timeInput = document.getElementById('modal-book-time');
-              if(nameInput) nameInput.value = '';
-              if(phoneInput) phoneInput.value = '';
-              if(dateInput) dateInput.value = '';
-              if(timeInput) timeInput.value = '';
           }
-          window.openServiceModal = openServiceModal;
-          window.closeServiceModal = closeServiceModal;
+
+          window.openServiceModal = window.openServiceModal || openServiceModal;
+          window.closeServiceModal = window.closeServiceModal || closeServiceModal;
+
+          document.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape') {
+                  closeServiceModal();
+                  if (window.location.hash === '#booking') {
+                      window.location.hash = '';
+                  }
+              }
+          });
 
           /* ═══════════════════════════════════════
              SALON AVAILABILITY
@@ -589,44 +640,14 @@ export default function initSalon() {
           })();
 
           /* ═══════════════════════════════════════
-             PRODUCTS CART
+             PRODUCTS CART — now managed by React (Shop.jsx)
+             These window stubs kept only for safety; real logic is in Shop.jsx
           ═══════════════════════════════════════ */
-          let cartItems = [];
-          function toggleCart() {
-              const drawer = document.getElementById('cart-drawer');
-              const bg = document.getElementById('cart-overlay-bg');
-              drawer.classList.toggle('open');
-              bg.style.display = drawer.classList.contains('open') ? 'block' : 'none';
-          }
-          function addToCart(name, price) {
-              cartItems.push({ name, price });
-              renderCart();
-              document.getElementById('cart-float').style.display = 'flex';
-              toggleCart();
-          }
-          function removeFromCart(i) {
-              cartItems.splice(i, 1);
-              renderCart();
-          }
-          function renderCart() {
-              const container = document.getElementById('cart-items');
-              const countEl = document.getElementById('cart-count');
-              const totalEl = document.getElementById('cart-total');
-              countEl.textContent = cartItems.length;
-              if (cartItems.length === 0) {
-                  container.innerHTML = '<div id="cart-empty">🛍️ Your cart is empty</div>';
-                  totalEl.textContent = 'Total: ₹0';
-                  return;
-              }
-              let total = 0;
-              container.innerHTML = cartItems.map((it, i) => {
-                  total += it.price;
-                  return `<div class="cart-item"><span class="cart-item-name">${it.name}</span><span class="cart-item-price">₹${it.price.toLocaleString()}</span><button class="cart-item-remove" onclick="removeFromCart(${i})">🗑</button></div>`;
-              }).join('');
-              totalEl.textContent = `Total: ₹${total.toLocaleString()}`;
-          }
-          // Init empty cart
-          renderCart();
+          function toggleCart() {}
+          function openCart() {}
+          function addToCart() {}
+          function removeFromCart() {}
+          // renderCart() intentionally removed — DOM elements belong to React now
 
           /* ═══════════════════════════════════════
              BEAUTY ROUTINE QUIZ
@@ -918,9 +939,10 @@ export default function initSalon() {
 
           /* ── EXPOSE HANDLERS USED BY JSX onClick ── */
           window.submitBooking = window.submitBooking || submitBooking;
-          window.openServiceModal = openServiceModal;
-          window.closeServiceModal = closeServiceModal;
+          window.openServiceModal = window.openServiceModal || openServiceModal;
+          window.closeServiceModal = window.closeServiceModal || closeServiceModal;
           window.toggleCart = toggleCart;
+          window.openCart = openCart;
           window.addToCart = addToCart;
           window.removeFromCart = removeFromCart;
           window.selectQuiz = selectQuiz;

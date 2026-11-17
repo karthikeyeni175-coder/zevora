@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import initSalon from "./salon.js";
 import TopWidgets from "./components/TopWidgets.jsx";
 import SpinWin from "./components/SpinWin.jsx";
@@ -27,6 +27,8 @@ import Footer from "./components/Footer.jsx";
 import ServiceModal from "./components/ServiceModal.jsx";
 
 export default function App() {
+  const [activeService, setActiveService] = useState(null);
+
   useEffect(() => {
     initSalon();
   }, []);
@@ -57,7 +59,7 @@ export default function App() {
       <Contact />
       <Booking />
       <Footer />
-      <ServiceModal />
+      <ServiceModal service={activeService} onClose={() => setActiveService(null)} />
     </>
   );
 }

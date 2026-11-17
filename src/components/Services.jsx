@@ -1,86 +1,116 @@
+const servicesList = [
+  {
+    id: "hair",
+    title: "Hair Styling",
+    img: "hair_styling.png",
+    desc: "Transform your look with our signature cuts, blowouts, and styling sessions crafted by expert colorists and stylists.",
+    delay: "0.1s"
+  },
+  {
+    id: "makeup",
+    title: "Makeup",
+    img: "makeup_service.png",
+    desc: "From everyday glam to editorial artistry, our makeup artists use luxury brands to craft your perfect look.",
+    delay: "0.15s"
+  },
+  {
+    id: "nail",
+    title: "Nail Art",
+    img: "nail_art.png",
+    desc: "Exquisite nail designs from classic elegance to avant-garde art, using premium gel and lacquer collections.",
+    delay: "0.2s"
+  },
+  {
+    id: "facial",
+    title: "Facial",
+    img: "facial_skincare.png",
+    desc: "Revitalize your complexion with our luxury facials featuring botanical extracts, gold masks, and diamond peels.",
+    delay: "0.25s"
+  },
+  {
+    id: "spa",
+    title: "Spa",
+    img: "spa_massage.png",
+    desc: "Surrender to tranquility with our full-body spa rituals, aromatherapy, and therapeutic massage experiences.",
+    delay: "0.3s"
+  },
+  {
+    id: "bridal",
+    title: "Bridal Makeup",
+    img: "bridal_makeup_srv.png",
+    desc: "Your most important day deserves perfection. Our bridal team creates timeless, ethereal looks that photograph beautifully.",
+    delay: "0.35s"
+  }
+];
+
 export default function Services() {
+  const handleOpenBooking = (service) => {
+    if (typeof window.openBookingDialog === 'function') {
+      window.openBookingDialog(service.id);
+    } else {
+      const select = document.getElementById('book-service');
+      if (select && service.id) {
+        select.value = service.id;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const bookingEl = document.getElementById('booking');
+      if (bookingEl) {
+        bookingEl.classList.add('active');
+        bookingEl.style.display = 'flex';
+      }
+      window.location.hash = '#booking';
+    }
+  };
+
   return (
     <>
       <section id="services">
-        
-          <div className="blob" style={{ width: "400px", height: "400px", background: "var(--primary)", top: "-100px", right: "5%" }}></div>
-          <div className="section-header reveal">
-              <div className="section-tag">What We Offer</div>
-              <h2 className="section-title">Our <span className="italic">Signature</span> Services</h2>
-              <div className="divider">
-                  <div className="divider-diamond"></div>
-              </div>
-              <p className="section-subtitle">Curated luxury beauty experiences designed to enhance your natural radiance with
-                  premium products and expert hands.</p>
+        <div className="blob" style={{ width: "400px", height: "400px", background: "var(--primary)", top: "-100px", right: "5%" }}></div>
+        <div className="section-header reveal">
+          <div className="section-tag">What We Offer</div>
+          <h2 className="section-title">Our <span className="italic">Signature</span> Services</h2>
+          <div className="divider">
+            <div className="divider-diamond"></div>
           </div>
-          <div className="services-grid">
-              <div className="service-card reveal" style={{ transitionDelay: "0.1s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="hair_styling.png" data-title="Hair Styling"
-                      data-desc="Transform your look with our signature cuts, blowouts, and styling sessions crafted by expert colorists and stylists.">
-                      <img src="hair_styling.png" alt="Hair Styling" />
-                  </div>
-                  <h3>Hair Styling</h3>
-                  <p>Transform your look with our signature cuts, blowouts, and styling sessions crafted by expert
-                      colorists and stylists.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
+          <p className="section-subtitle">
+            Curated luxury beauty experiences designed to enhance your natural radiance with premium products and expert hands.
+          </p>
+        </div>
+
+        <div className="services-grid">
+          {servicesList.map((service) => (
+            <div
+              key={service.id}
+              className="service-card reveal"
+              style={{ transitionDelay: service.delay, textAlign: "center" }}
+            >
+              <div
+                className="service-image"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleOpenBooking(service)}
+                data-img={service.img}
+                data-title={service.title}
+                data-desc={service.desc}
+                data-key={service.id}
+              >
+                <img src={service.img} alt={service.title} />
               </div>
-              <div className="service-card reveal" style={{ transitionDelay: "0.15s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="makeup_service.png" data-title="Makeup"
-                      data-desc="From everyday glam to editorial artistry, our makeup artists use luxury brands to craft your perfect look.">
-                      <img src="makeup_service.png" alt="Makeup" />
-                  </div>
-                  <h3>Makeup</h3>
-                  <p>From everyday glam to editorial artistry, our makeup artists use luxury brands to craft your perfect
-                      look.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
-              </div>
-              <div className="service-card reveal" style={{ transitionDelay: "0.2s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="nail_art.png" data-title="Nail Art"
-                      data-desc="Exquisite nail designs from classic elegance to avant-garde art, using premium gel and lacquer collections.">
-                      <img src="nail_art.png" alt="Nail Art" />
-                  </div>
-                  <h3>Nail Art</h3>
-                  <p>Exquisite nail designs from classic elegance to avant-garde art, using premium gel and lacquer
-                      collections.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
-              </div>
-              <div className="service-card reveal" style={{ transitionDelay: "0.25s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="facial_skincare.png" data-title="Facial"
-                      data-desc="Revitalize your complexion with our luxury facials featuring botanical extracts, gold masks, and diamond peels.">
-                      <img src="facial_skincare.png" alt="Facial" />
-                  </div>
-                  <h3>Facial</h3>
-                  <p>Revitalize your complexion with our luxury facials featuring botanical extracts, gold masks, and
-                      diamond peels.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
-              </div>
-              <div className="service-card reveal" style={{ transitionDelay: "0.3s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="spa_massage.png" data-title="Spa"
-                      data-desc="Surrender to tranquility with our full-body spa rituals, aromatherapy, and therapeutic massage experiences.">
-                      <img src="spa_massage.png" alt="Spa" />
-                  </div>
-                  <h3>Spa</h3>
-                  <p>Surrender to tranquility with our full-body spa rituals, aromatherapy, and therapeutic massage
-                      experiences.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
-              </div>
-              <div className="service-card reveal" style={{ transitionDelay: "0.35s", textAlign: "center" }}>
-                  <div className="service-image" style={{ cursor: "pointer" }} onClick={(e) => window.openServiceModal(e.currentTarget)}
-                      data-img="bridal_makeup_srv.png" data-title="Bridal Makeup"
-                      data-desc="Your most important day deserves perfection. Our bridal team creates timeless, ethereal looks that photograph beautifully.">
-                      <img src="bridal_makeup_srv.png" alt="Bridal Makeup" />
-                  </div>
-                  <h3>Bridal Makeup</h3>
-                  <p>Your most important day deserves perfection. Our bridal team creates timeless, ethereal looks that
-                      photograph beautifully.</p>
-                  <a href="#!" className="service-link" onClick={(e) => { e.preventDefault(); window.openServiceModal(e.currentTarget.parentElement.querySelector('.service-image')) }}>Book Session <i className="fas fa-arrow-right"></i></a>
-              </div>
-          </div>
+              <h3>{service.title}</h3>
+              <p>{service.desc}</p>
+              <a
+                href="#service-modal"
+                className="service-link"
+                role="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleOpenBooking(service);
+                }}
+              >
+                Book Session <i className="fas fa-arrow-right"></i>
+              </a>
+            </div>
+          ))}
+        </div>
       </section>
     </>
   );

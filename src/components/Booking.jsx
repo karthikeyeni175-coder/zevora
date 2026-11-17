@@ -1,13 +1,211 @@
+import { useState, useMemo, useEffect } from "react";
+
 export default function Booking() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const dates = useMemo(() => {
+    const list = [];
+    const today = new Date();
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      list.push({
+        value: d.toISOString().split("T")[0],
+        label: d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })
+      });
+    }
+    return list;
+  }, []);
+
+  const handleClose = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsOpen(false);
+    document.body.style.overflow = "";
+
+    const bookingEl = document.getElementById("booking");
+    if (bookingEl) {
+      bookingEl.classList.remove("active");
+      bookingEl.style.display = "none";
+    }
+
+    if (window.location.hash === "#booking") {
+      try {
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch {
+        window.location.hash = "";
+      }
+    }
+  };
+
+  const handleOpen = (serviceId) => {
+    setIsOpen(true);
+    document.body.style.overflow = "hidden";
+
+    const bookingEl = document.getElementById("booking");
+    if (bookingEl) {
+      bookingEl.classList.add("active");
+      bookingEl.style.display = "flex";
+    }
+
+    const formCont = document.getElementById("book-form-container");
+    const msg = document.getElementById("success-msg");
+    if (formCont) formCont.style.display = "block";
+    if (msg) msg.style.display = "none";
+
+    if (serviceId) {
+      setTimeout(() => {
+        const select = document.getElementById("book-service");
+        if (select) {
+          select.value = serviceId;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }, 50);
+    }
+  };
+
+  useEffect(() => {
+    window.openBookingDialog = handleOpen;
+
+    const checkHash = () => {
+      if (window.location.hash === "#booking") {
+        handleOpen();
+      } else {
+        setIsOpen(false);
+        document.body.style.overflow = "";
+      }
+    };
+
+    if (window.location.hash === "#booking") {
+      handleOpen();
+    }
+
+    window.addEventListener("hashchange", checkHash);
+
+    const resolveServiceAndOpen = (element) => {
+      const card = element.closest('.service-card, .trend-card, .pricing-card, .story-step');
+      let serviceKey = null;
+
+      if (card) {
+        const text = (card.textContent || "").toLowerCase();
+        if (text.includes("bridal")) {
+          serviceKey = "bridal";
+        } else if (text.includes("nail")) {
+          serviceKey = "nail";
+        } else if (text.includes("facial") || text.includes("diamond") || text.includes("skin") || text.includes("peel")) {
+          serviceKey = "facial";
+        } else if (text.includes("spa") || text.includes("massage") || text.includes("aura") || text.includes("aromatherapy")) {
+          serviceKey = "spa";
+        } else if (text.includes("hair") || text.includes("cut") || text.includes("waves") || text.includes("balayage") || text.includes("blowout")) {
+          serviceKey = "hair";
+        } else if (text.includes("makeup") || text.includes("glam") || text.includes("artistry")) {
+          serviceKey = "makeup";
+        }
+      }
+
+      handleOpen(serviceKey);
+    };
+
+    const handleGlobalBookingClick = (e) => {
+      // Ignore clicks originating inside the booking modal dialog itself
+      if (e.target.closest('#booking')) {
+        return;
+      }
+
+      // 1. Any anchor targeting #booking
+      const anchor = e.target.closest('a[href="#booking"]');
+      if (anchor) {
+        e.preventDefault();
+        resolveServiceAndOpen(anchor);
+        return;
+      }
+
+      // 2. Any button or link with class indicating booking
+      const bookBtn = e.target.closest('.nav-book-btn, .trend-btn, .service-link');
+      if (bookBtn) {
+        e.preventDefault();
+        resolveServiceAndOpen(bookBtn);
+        return;
+      }
+
+      // 3. Any button or link with text starting with or containing "Book"
+      const clickable = e.target.closest('a, button');
+      if (clickable && clickable.textContent) {
+        const txt = clickable.textContent.trim();
+        if (/^Book\b/i.test(txt) || /Book Now/i.test(txt) || /Book Appointment/i.test(txt) || /Book Session/i.test(txt) || /Book Your Transformation/i.test(txt)) {
+          e.preventDefault();
+          resolveServiceAndOpen(clickable);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleGlobalBookingClick);
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose(e);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("hashchange", checkHash);
+      document.removeEventListener("click", handleGlobalBookingClick);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    const name = document.getElementById("book-name")?.value?.trim();
+    const phone = document.getElementById("book-phone")?.value?.trim();
+    const email = document.getElementById("book-email")?.value?.trim();
+    const service = document.getElementById("book-service")?.value;
+    const date = document.getElementById("book-date")?.value;
+    const time = document.getElementById("book-time")?.value;
+
+    if (!name || !phone || !email || !service || !date || !time) {
+      alert("Please fill in all fields to book your appointment.");
+      return;
+    }
+
+    const formCont = document.getElementById("book-form-container");
+    const msg = document.getElementById("success-msg");
+    if (formCont) formCont.style.display = "none";
+    if (msg) {
+      msg.style.display = "block";
+      msg.style.animation = "fadeUp 0.6s ease forwards";
+    }
+  };
+
+  useEffect(() => {
+    window.submitBooking = handleSubmit;
+  }, []);
+
   return (
     <>
-      <section id="booking">
-          <div className="booking-wrap">
+      <section
+        id="booking"
+        className={isOpen ? "active" : ""}
+        style={{
+          display: isOpen ? "flex" : "none",
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none"
+        }}
+        onClick={(e) => {
+          if (e.target.id === "booking") {
+            handleClose(e);
+          }
+        }}
+      >
+          <div className="booking-wrap" onClick={(e) => e.stopPropagation()}>
               <button
                   type="button"
                   className="booking-close-btn"
                   aria-label="Close booking dialog"
-                  onClick={() => { window.location.hash = ""; }}
+                  onClick={handleClose}
               >
                   &times;
               </button>
@@ -57,6 +255,9 @@ export default function Booking() {
                               <label className="form-label">Preferred Date</label>
                               <select id="book-date">
                                   <option value="">Select Date</option>
+                                  {dates.map((d) => (
+                                      <option key={d.value} value={d.value}>{d.label}</option>
+                                  ))}
                               </select>
                           </div>
                           <div className="form-group no-float">
@@ -75,7 +276,7 @@ export default function Booking() {
                               </select>
                           </div>
                       </div>
-                      <button id="book-form-btn" className="btn-primary" onClick={() => window.submitBooking()}>
+                      <button id="book-form-btn" className="btn-primary" onClick={handleSubmit}>
                           <i className="fas fa-calendar-check"></i> Book My Appointment
                       </button>
                   </div>
@@ -85,6 +286,16 @@ export default function Booking() {
                       <small
                           style={{ fontFamily: "'Poppins',sans-serif", fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: "300", fontStyle: "normal" }}>We'll
                           confirm within 2 hours via WhatsApp.</small>
+                      <div style={{ marginTop: "1.2rem" }}>
+                          <button
+                              type="button"
+                              className="btn-outline"
+                              onClick={handleClose}
+                              style={{ padding: "0.5rem 1.5rem", fontSize: "0.88rem", cursor: "pointer" }}
+                          >
+                              Close
+                          </button>
+                      </div>
                   </div>
               </div>
           </div>
